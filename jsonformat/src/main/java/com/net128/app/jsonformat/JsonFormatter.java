@@ -2,6 +2,8 @@ package com.net128.app.jsonformat;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,17 +36,19 @@ public class JsonFormatter {
 								}
 								else {
 									out.write(c);
-									out.write(indent(indent += indentWidth));
+									if(arrayDepth<=1) out.write(indent(indent += indentWidth));
+									else indent += indentWidth;
 								}
 								continue;
 							case '}':
 							case ']':
-								if(compact && c==']')  {
+								if(compact && c==']') {
 									out.write(c);
 									arrayDepth--;
 								}
 								else {
-									out.write(indent(indent -= indentWidth));
+									if(arrayDepth<=1) out.write(indent(indent -= indentWidth));
+									else indent -= indentWidth;
 									out.write(c);
 								}
 								continue;
@@ -71,6 +75,7 @@ public class JsonFormatter {
 				}
 			}
 		}
+		System.err.println(indents);
 	}
 
 	private String indent(final int indent) {
@@ -82,12 +87,16 @@ public class JsonFormatter {
 		new JsonFormatter().run(args);
 	}
 
-	private void run(String[] args) throws IOException {
+	private void run(String[] theArgs) throws IOException {
+		var arguments = new ArrayList<>(Arrays.asList(theArgs));
+		var compact = true;
+		int pos = arguments.indexOf("-nc");
+		if(pos>=0) { arguments.remove(pos); compact = false; }
 		InputStream is;
-		if(args.length > 0) {
-			if(args.length>2 || !args[0].matches("(-f| *[\"{].* *[\"}] *)")) usage();
-			if(args.length==1) is=new ByteArrayInputStream(args[0].getBytes(StandardCharsets.UTF_8));
-			else is = new FileInputStream(args[1]);
+		if(arguments.size() > 0) {
+			if(arguments.size()>2 || !arguments.get(0).matches("(-f| *[\"{].* *[\"}] *)")) usage();
+			if(arguments.size()==1) is=new ByteArrayInputStream(arguments.get(0).getBytes(StandardCharsets.UTF_8));
+			else is = new FileInputStream(arguments.get(1));
 		} else {
 			if (System.in.available() == 0) {
 				usage();
@@ -96,12 +105,12 @@ public class JsonFormatter {
 			is = System.in;
 		}
 		try (var bis = new BufferedInputStream(is)) {
-			writeFormattedJson(bis, 2, true, System.out);
+			writeFormattedJson(bis, 2, compact, System.out);
 		}
 	}
 
 	private void usage() {
-		System.out.printf("Usage: %s [-f <json-file>|<json-string>]\n\tAlternatively STDIN may contain JSON", getClass().getSimpleName());
+		System.out.printf("Usage: %s [-nc|--not-compact] [-f <json-file>|<json-string>]\n\tAlternatively STDIN may contain JSON", getClass().getSimpleName());
 		System.exit(1);
 	}
 }
