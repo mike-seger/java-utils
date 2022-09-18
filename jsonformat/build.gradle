@@ -23,6 +23,6 @@ jar {
 
 swayamJar {
 	dependencies assemble
-	source = file('build/libs/json-format-0.0.1-SNAPSHOT.jar')
-	destinationDir = file('build')
+	source = file("${buildDir}/libs/${name}-${version}.jar")
+	destinationDir = file("${buildDir}")
 }
